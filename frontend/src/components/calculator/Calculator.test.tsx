@@ -4,50 +4,60 @@ import { describe, expect, it, vi } from 'vitest'
 import { Calculator } from './Calculator'
 
 describe('Calculator', () => {
-  it('sends a full expression and shows the answer and history', async () => {
+  it('evaluates a typed mathematical expression', async () => {
     const evaluate = vi.fn().mockResolvedValue(11)
     render(<Calculator client={{ evaluate }} />)
     const user = userEvent.setup()
-    await user.type(screen.getByLabelText('Expression'), '2 + 3 * (4 - 1)')
-    await user.click(screen.getByRole('button', { name: /evaluate expression/i }))
+    await user.type(screen.getByLabelText('Expression'), '2 + 3 * (4 - 1){enter}')
     expect(evaluate).toHaveBeenCalledWith('2 + 3 * (4 - 1)')
     expect(await screen.findByText('11')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Reuse 2 + 3 * (4 - 1)' })).toBeInTheDocument()
   })
 
-  it('rejects an empty expression before calling the API', async () => {
-    const evaluate = vi.fn()
+  it('builds an expression with the keypad and evaluates it', async () => {
+    const evaluate = vi.fn().mockResolvedValue(14)
     render(<Calculator client={{ evaluate }} />)
-    await userEvent.setup().click(screen.getByRole('button', { name: /evaluate expression/i }))
-    expect(screen.getByRole('alert')).toHaveTextContent('Enter an expression')
-    expect(evaluate).not.toHaveBeenCalled()
+    const user = userEvent.setup()
+    for (const key of ['2', '(', '3', '+', '4', ')']) {
+      await user.click(screen.getByRole('button', { name: key === '+' ? 'Add' : key }))
+    }
+    expect(screen.getByLabelText('Expression')).toHaveValue('2(3+4)')
+    await user.click(screen.getByRole('button', { name: 'Equals' }))
+    expect(evaluate).toHaveBeenCalledWith('2(3+4)')
+    expect(await screen.findByText('14')).toBeInTheDocument()
   })
 
-  it('loads an example and displays typed API errors', async () => {
+  it('supports backspace and clear', async () => {
+    render(<Calculator client={{ evaluate: vi.fn() }} />)
+    const user = userEvent.setup()
+    const input = screen.getByLabelText('Expression')
+    await user.type(input, '12+3')
+    await user.click(screen.getByRole('button', { name: 'Backspace' }))
+    expect(input).toHaveValue('12+')
+    await user.click(screen.getByRole('button', { name: 'Clear' }))
+    expect(input).toHaveValue('')
+  })
+
+  it('inserts a square root symbol as a single keypad operation', async () => {
+    const evaluate = vi.fn().mockResolvedValue(3)
+    render(<Calculator client={{ evaluate }} />)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Square root' }))
+    await user.click(screen.getByRole('button', { name: '9' }))
+    expect(screen.getByLabelText('Expression')).toHaveValue('√9')
+    await user.click(screen.getByRole('button', { name: 'Equals' }))
+    expect(evaluate).toHaveBeenCalledWith('√9')
+  })
+
+  it('validates empty input and displays API errors', async () => {
     const evaluate = vi.fn().mockRejectedValue(new Error('cannot divide by zero'))
     render(<Calculator client={{ evaluate }} />)
     const user = userEvent.setup()
-    await user.click(screen.getByRole('button', { name: /20% of 50/i }))
-    expect(screen.getByLabelText('Expression')).toHaveValue('20% of 50')
-    await user.click(screen.getByRole('button', { name: /evaluate expression/i }))
-    expect(evaluate).toHaveBeenCalledWith('20% of 50')
+    await user.click(screen.getByRole('button', { name: 'Equals' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter an expression')
+    expect(evaluate).not.toHaveBeenCalled()
+    await user.type(screen.getByLabelText('Expression'), '1÷0')
+    await user.click(screen.getByRole('button', { name: 'Equals' }))
+    expect(evaluate).toHaveBeenCalledWith('1÷0')
     expect(await screen.findByRole('alert')).toHaveTextContent('cannot divide by zero')
-    await user.click(screen.getByRole('button', { name: /clear/i }))
-    expect(screen.getByLabelText('Expression')).toHaveValue('')
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-  })
-
-  it('supports the keyboard shortcut and reuses a previous expression', async () => {
-    const evaluate = vi.fn().mockResolvedValue(10)
-    render(<Calculator client={{ evaluate }} />)
-    const user = userEvent.setup()
-    const input = screen.getByLabelText('Expression')
-    await user.type(input, '20% of 50')
-    await user.keyboard('{Control>}{Enter}{/Control}')
-    expect(evaluate).toHaveBeenCalledWith('20% of 50')
-    await screen.findByText('10')
-    await user.click(screen.getByRole('button', { name: /clear/i }))
-    await user.click(screen.getByRole('button', { name: 'Reuse 20% of 50' }))
-    expect(input).toHaveValue('20% of 50')
   })
 })

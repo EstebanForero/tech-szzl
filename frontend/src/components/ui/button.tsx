@@ -7,6 +7,8 @@ const buttonVariants = cva('inline-flex items-center justify-center gap-2 rounde
     variant: {
       default: 'bg-violet-700 text-white hover:bg-violet-800',
       accent: 'bg-emerald-300 text-slate-950 hover:bg-emerald-200',
+      key: 'border border-slate-200 bg-white text-slate-900 hover:bg-slate-50',
+      operator: 'bg-slate-100 text-slate-800 hover:bg-slate-200',
       outline: 'border border-zinc-200 bg-white text-zinc-800 hover:border-violet-300 hover:bg-violet-50',
       ghost: 'text-zinc-600 hover:bg-zinc-100',
     },
