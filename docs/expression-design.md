@@ -12,4 +12,4 @@ From lower to higher precedence: `+` and `-`; `*`, `/`, and `of`; unary `+` and 
 
 The Go `expression` package has a tokenizer, a parser that builds a small syntax tree, and an evaluator. The evaluator delegates arithmetic to the existing `calculator` service through an interface. The HTTP handler depends on an `Evaluator` interface, making endpoint tests independent of the parser.
 
-Expressions are limited to 256 bytes, 128 tokens, and 64 nested parse levels. The parser never executes user code. All results must be finite real numbers.
+The UI allows up to 256 characters. The API accepts up to 1024 bytes, 128 tokens, and 64 nested parse levels, covering multibyte Unicode operators within the UI limit. The parser never executes user code. All results must be finite real numbers.
