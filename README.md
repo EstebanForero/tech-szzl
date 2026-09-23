@@ -4,8 +4,8 @@ A responsive calculator with a React/TypeScript frontend and a Go REST API. It s
 
 ## Requirements
 
-- Go 1.23 or newer
-- Node.js 20 or newer and npm
+- Go 1.27 or newer
+- Node.js 26 or newer and npm
 
 ## Run locally
 
@@ -25,6 +25,16 @@ npm run dev
 Open the URL printed by Vite (normally `http://localhost:5173`). Vite proxies `/api` and `/healthz` to the Go service at `http://localhost:8080`. The API listens on port 8080 by default; set `PORT` to change it. If you change the API port, also update the proxy target in `frontend/vite.config.ts`.
 
 To make a frontend production build, run `npm run build` in `frontend`; Vite writes it to `frontend/dist`. The Go API is a separate service and does not serve these static files. Deploy the frontend with a static host that proxies `/api` to the Go service.
+
+## Run with Docker Compose
+
+From the repository root, run:
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:8080`. Compose builds each service from its own Dockerfile. Nginx serves the built React app and forwards `/api/` and `/healthz` to the Go container. The API is available through the same public port, for example `http://localhost:8080/api/v1/calculate`. Stop the stack with `docker compose down`.
 
 ## API
 
