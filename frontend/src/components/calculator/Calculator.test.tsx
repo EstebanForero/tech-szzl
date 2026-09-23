@@ -64,4 +64,20 @@ describe('Calculator', () => {
     expect(evaluate).toHaveBeenCalledWith('1÷0')
     expect(await screen.findByRole('alert')).toHaveTextContent('cannot divide by zero')
   })
+
+  it('opens and closes the expression help', async () => {
+    render(<Calculator client={{ evaluate: vi.fn() }} />)
+    const user = userEvent.setup()
+    const help = screen.getByRole('button', { name: 'How to use' })
+    expect(help).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByText('Implicit multiplication')).not.toBeVisible()
+
+    await user.click(help)
+    expect(help).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Implicit multiplication')).toBeVisible()
+
+    await user.click(help)
+    expect(help).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByText('Implicit multiplication')).not.toBeVisible()
+  })
 })
