@@ -1,6 +1,6 @@
 # Sumly calculator
 
-A responsive expression calculator with a React/TypeScript frontend and a Go REST API. Type a complete expression such as `2 + 3 * (4 - 1)` and the backend evaluates its parts in mathematical order.
+A responsive expression calculator with a React/TypeScript frontend and a Go REST API. Type a complete expression such as `2 + 3 × (4 - 1)`, or build it with the keypad, and the backend evaluates its parts in mathematical order.
 
 ## Requirements
 
@@ -50,15 +50,13 @@ curl -sS http://localhost:9000/api/v1/evaluate \
 ```bash
 curl -sS http://localhost:9000/api/v1/evaluate \
   -H 'Content-Type: application/json' \
-  -d '{"expression":"20% of 50"}'
+  -d '{"expression":"20% × 50"}'
 # {"result":10}
 ```
 
 In local development, the same endpoint is also available directly from the Go service at `http://localhost:8080`. `GET /healthz` returns `{"status":"ok"}`.
 
-The expression language supports `+`, `-`, `*`, `/`, `^`, parentheses, `sqrt(...)`, and postfix `%`. `of` means multiplication, so `20% of 50` is 10. It accepts `×`, `÷`, `−`, and `√(...)` as alternate symbols. Powers associate from the right (`2^3^2` is 512), and powers take precedence over unary minus (`-2^2` is -4). Write multiplication explicitly: `2 * (3 + 4)`. Text such as “what is two plus three” is not part of the expression language. See [docs/expression-design.md](docs/expression-design.md) for the grammar and limits.
-
-The original `POST /api/v1/calculate` endpoint remains available. It accepts `{"operation":"add","operands":[2,3]}` and returns `{"result":5}`. Supported operation names are `add`, `subtract`, `multiply`, `divide`, `power`, `sqrt`, and `percent`.
+The expression language supports `+`, `−`, `×`, `÷`, `^`, parentheses, square roots (`√9` or `√(9 + 7)`), and postfix `%`. Keyboard `-`, `*`, and `/` work as alternate symbols. `20% × 50` is 10. Powers associate from the right (`2^3^2` is 512), and powers take precedence over unary minus (`-2^2` is -4). Multiplication may be explicit (`2 × (3 + 4)`) or implicit (`2(3 + 4)`). Words such as `of` and `sqrt` are not part of the syntax. See [docs/expression-design.md](docs/expression-design.md) for the grammar and limits.
 
 Invalid input returns HTTP 400 with a structured error. Division by zero returns:
 
@@ -83,14 +81,14 @@ npm run test:coverage
 npm run build
 ```
 
-The backend tests cover arithmetic, expression parsing and evaluation, syntax limits, typed errors, and both HTTP endpoints with fakes. The frontend tests use a fake API client for form behavior and a fake `fetch` for response handling. See [COVERAGE.md](COVERAGE.md) for the measured report.
+The backend tests cover arithmetic, expression parsing and evaluation, syntax limits, typed errors, and the HTTP endpoint with a fake evaluator. The frontend tests cover typed input, keypad editing, and API responses with fakes. See [COVERAGE.md](COVERAGE.md) for the measured report.
 
 ## Design decisions
 
 - Arithmetic lives in `backend/internal/calculator`, independent of HTTP. `backend/internal/expression` tokenizes, parses, and evaluates text, delegating each arithmetic operation through a small interface. The parser never executes user code.
-- Domain and syntax failures have distinct Go error types. `backend/internal/httpapi` translates those types to JSON codes and status 400; unknown errors receive a generic 500. The handler depends on `Calculator` and `Evaluator` interfaces for isolated tests.
-- The expression endpoint is the UI's primary API. The original operation endpoint remains for compatibility. Strict JSON decoding rejects unknown fields and trailing values; the service validates finite input and output.
-- `frontend/src/lib/api.ts` is the network boundary. The expression workspace receives a `CalculatorClient`, making interactions testable without a server. Reusable button, textarea, label, and card components follow the local shadcn component pattern, with Tailwind CSS and accessible Radix labels.
+- Domain and syntax failures have distinct Go error types. `backend/internal/httpapi` translates those types to JSON codes and status 400; unknown errors receive a generic 500. The handler depends on an `Evaluator` interface for isolated tests.
+- The expression endpoint is the sole calculation API. Strict JSON decoding rejects unknown fields and trailing values; the service validates finite input and output.
+- `frontend/src/lib/api.ts` is the network boundary. The calculator panel receives a `CalculatorClient`, making interactions testable without a server. Its keypad editing is a small pure module. Reusable button, input, label, and card components follow the local shadcn component pattern, with Tailwind CSS and accessible Radix labels.
 - Both sides use floating-point numbers. The UI formats results to at most 12 significant digits for readability. This is not an exact-decimal financial calculator.
 - The Vite proxy keeps local development on one browser origin. A production host should proxy API requests the same way.
 
