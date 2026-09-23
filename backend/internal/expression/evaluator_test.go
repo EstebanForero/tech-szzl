@@ -34,7 +34,7 @@ func TestEvaluate(t *testing.T) {
 		{"divide by zero", "1 / (2 - 2)", 0, &calculator.DivisionByZeroError{}},
 		{"negative root", "sqrt(-1)", 0, &calculator.InvalidOperandsError{}},
 		{"complex result", "(-2)^.5", 0, &calculator.InvalidResultError{}},
-		{"too long", strings.Repeat("1", 257), 0, &SyntaxError{}},
+		{"too long", strings.Repeat("1", 1025), 0, &SyntaxError{}},
 		{"too many parts", strings.Repeat("1+", 65) + "1", 0, &SyntaxError{}},
 		{"too deep", strings.Repeat("-", 65) + "1", 0, &SyntaxError{}},
 	}

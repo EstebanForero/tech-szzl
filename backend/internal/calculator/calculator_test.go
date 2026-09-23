@@ -21,6 +21,7 @@ func TestCalculate(t *testing.T) {
 		{"power", Power, []float64{2, 3}, 8, nil},
 		{"square root", SquareRoot, []float64{9}, 3, nil},
 		{"percent", Percent, []float64{20, 50}, 10, nil},
+		{"percent avoids intermediate overflow", Percent, []float64{200, math.MaxFloat64 / 4}, math.MaxFloat64 / 2, nil},
 		{"division by zero", Divide, []float64{2, 0}, 0, &DivisionByZeroError{}},
 		{"negative square root", SquareRoot, []float64{-1}, 0, &InvalidOperandsError{}},
 		{"unknown operation", Operation("nope"), []float64{2, 3}, 0, &InvalidOperationError{}},

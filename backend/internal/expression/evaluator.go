@@ -11,8 +11,8 @@ type Evaluator struct{ calculator Calculator }
 func NewEvaluator(service Calculator) *Evaluator { return &Evaluator{calculator: service} }
 
 func (e *Evaluator) Evaluate(source string) (float64, error) {
-	if len(source) > 256 {
-		return 0, &SyntaxError{256, "expression is too long"}
+	if len(source) > 1024 {
+		return 0, &SyntaxError{1024, "expression is too long"}
 	}
 	tokens, err := tokenize(source)
 	if err != nil {

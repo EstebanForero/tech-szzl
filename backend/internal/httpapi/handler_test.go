@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -89,6 +90,30 @@ func TestEvaluateHandler(t *testing.T) {
 			}
 			if tt.called && tt.fake.expression != "" && tt.name == "success" && tt.fake.expression != "2 + 3 * 4" {
 				t.Fatalf("unexpected expression %q", tt.fake.expression)
+			}
+		})
+	}
+}
+
+func TestPublicErrorMapping(t *testing.T) {
+	tests := []struct {
+		name, code string
+		err        error
+		known      bool
+	}{
+		{"syntax", "invalid_expression", &expression.SyntaxError{Reason: "bad input"}, true},
+		{"operation", "invalid_operation", &calculator.InvalidOperationError{Operation: "unknown"}, true},
+		{"operands", "invalid_operands", &calculator.InvalidOperandsError{Reason: "bad operands"}, true},
+		{"zero", "division_by_zero", &calculator.DivisionByZeroError{}, true},
+		{"result", "invalid_result", &calculator.InvalidResultError{}, true},
+		{"wrapped", "division_by_zero", fmt.Errorf("evaluate: %w", &calculator.DivisionByZeroError{}), true},
+		{"unexpected", "", errors.New("secret"), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			code, message, known := publicError(tt.err)
+			if code != tt.code || known != tt.known || (tt.known && message == "") {
+				t.Fatalf("code %q, message %q, known %v", code, message, known)
 			}
 		})
 	}

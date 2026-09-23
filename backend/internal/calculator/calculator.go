@@ -60,7 +60,7 @@ func (s *Service) Calculate(operation Operation, operands []float64) (float64, e
 		}
 		result = math.Sqrt(a)
 	case Percent:
-		result = a * operands[1] / 100
+		result = a / 100 * operands[1]
 	}
 	if math.IsNaN(result) || math.IsInf(result, 0) {
 		return 0, &InvalidResultError{}
