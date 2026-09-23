@@ -1,8 +1,6 @@
 package calculator
 
 import (
-	"errors"
-	"fmt"
 	"math"
 )
 
@@ -18,22 +16,6 @@ const (
 	Percent    Operation = "percent"
 )
 
-type ErrorCode string
-
-const (
-	InvalidOperation ErrorCode = "invalid_operation"
-	InvalidOperands  ErrorCode = "invalid_operands"
-	DivisionByZero   ErrorCode = "division_by_zero"
-	InvalidResult    ErrorCode = "invalid_result"
-)
-
-type Error struct {
-	Code    ErrorCode
-	Message string
-}
-
-func (e *Error) Error() string { return e.Message }
-
 type Service struct{}
 
 func NewService() *Service { return &Service{} }
@@ -45,14 +27,14 @@ func (s *Service) Calculate(operation Operation, operands []float64) (float64, e
 	case SquareRoot:
 		want = 1
 	default:
-		return 0, &Error{InvalidOperation, fmt.Sprintf("unsupported operation %q", operation)}
+		return 0, &InvalidOperationError{Operation: operation}
 	}
 	if len(operands) != want {
-		return 0, &Error{InvalidOperands, fmt.Sprintf("%s requires %d operand(s)", operation, want)}
+		return 0, &InvalidOperandsError{Reason: "incorrect number of operands"}
 	}
 	for _, operand := range operands {
 		if math.IsNaN(operand) || math.IsInf(operand, 0) {
-			return 0, &Error{InvalidOperands, "operands must be finite numbers"}
+			return 0, &InvalidOperandsError{Reason: "operands must be finite numbers"}
 		}
 	}
 
@@ -67,29 +49,21 @@ func (s *Service) Calculate(operation Operation, operands []float64) (float64, e
 		result = a * operands[1]
 	case Divide:
 		if operands[1] == 0 {
-			return 0, &Error{DivisionByZero, "cannot divide by zero"}
+			return 0, &DivisionByZeroError{}
 		}
 		result = a / operands[1]
 	case Power:
 		result = math.Pow(a, operands[1])
 	case SquareRoot:
 		if a < 0 {
-			return 0, &Error{InvalidOperands, "square root requires a non-negative operand"}
+			return 0, &InvalidOperandsError{Reason: "square root requires a non-negative operand"}
 		}
 		result = math.Sqrt(a)
 	case Percent:
 		result = a * operands[1] / 100
 	}
 	if math.IsNaN(result) || math.IsInf(result, 0) {
-		return 0, &Error{InvalidResult, "calculation has no finite real result"}
+		return 0, &InvalidResultError{}
 	}
 	return result, nil
-}
-
-func Code(err error) ErrorCode {
-	var calculationError *Error
-	if errors.As(err, &calculationError) {
-		return calculationError.Code
-	}
-	return "internal_error"
 }
