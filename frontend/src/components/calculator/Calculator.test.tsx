@@ -8,9 +8,13 @@ describe('Calculator', () => {
     const evaluate = vi.fn().mockResolvedValue(11)
     render(<Calculator client={{ evaluate }} />)
     const user = userEvent.setup()
-    await user.type(screen.getByLabelText('Expression'), '2 + 3 * (4 - 1){enter}')
+    const input = screen.getByLabelText('Expression')
+    await user.type(input, '2 + 3 * (4 - 1){enter}')
     expect(evaluate).toHaveBeenCalledWith('2 + 3 * (4 - 1)')
     expect(await screen.findByText('11')).toBeInTheDocument()
+    expect(input).toHaveFocus()
+    await user.type(input, '+4')
+    expect(input).toHaveValue('2 + 3 * (4 - 1)+4')
   })
 
   it('builds an expression with the keypad and evaluates it', async () => {

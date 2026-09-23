@@ -137,7 +137,7 @@ export function Calculator({ client }: Props) {
             <form onSubmit={submit} noValidate>
               <div className="rounded-[1.5rem] bg-slate-950 px-5 py-6 text-white sm:px-6">
                 <Label htmlFor="expression" className="text-xs font-semibold uppercase tracking-widest text-slate-400">Expression</Label>
-                <Input ref={inputRef} id="expression" type="text" value={expression} onChange={(event) => updateExpression(event.target.value)} maxLength={256} disabled={pending} autoComplete="off" spellCheck={false} placeholder="0" className="mt-3" />
+                <Input ref={inputRef} id="expression" type="text" value={expression} onChange={(event) => updateExpression(event.target.value)} maxLength={256} readOnly={pending} autoComplete="off" spellCheck={false} placeholder="0" className="mt-3" />
                 <div className="mt-6 border-t border-white/10 pt-5 text-right" aria-live="polite">
                   <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Result</p>
                   <p className={`mt-2 break-all text-4xl font-semibold tracking-tight sm:text-5xl ${result === null ? 'text-slate-600' : 'text-emerald-300'}`}>{result === null ? '0' : formatResult(result)}</p>
