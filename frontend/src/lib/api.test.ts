@@ -17,4 +17,9 @@ describe('expression API client', () => {
     await expect(createCalculatorClient(vi.fn().mockRejectedValue(new Error('offline'))).evaluate('2+3')).rejects.toMatchObject({ code: 'network_error' })
     await expect(createCalculatorClient(vi.fn().mockResolvedValue({ ok: true, json: async () => ({ result: '5' }) })).evaluate('2+3')).rejects.toMatchObject({ code: 'invalid_response' })
   })
+
+  it('handles unreadable JSON and malformed API errors', async () => {
+    await expect(createCalculatorClient(vi.fn().mockResolvedValue({ ok: true, json: async () => { throw new Error('bad JSON') } })).evaluate('2+3')).rejects.toMatchObject({ code: 'invalid_response' })
+    await expect(createCalculatorClient(vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: {} }) })).evaluate('2+3')).rejects.toEqual(new ApiError('request_failed', 'Calculation failed.'))
+  })
 })

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { Calculator } from './Calculator'
@@ -63,6 +63,31 @@ describe('Calculator', () => {
     await user.click(screen.getByRole('button', { name: 'Equals' }))
     expect(evaluate).toHaveBeenCalledWith('1÷0')
     expect(await screen.findByRole('alert')).toHaveTextContent('cannot divide by zero')
+  })
+
+  it('shows pending feedback and prevents edits until the result arrives', async () => {
+    let resolve!: (value: number) => void
+    const evaluate = vi.fn().mockImplementation(() => new Promise<number>((done) => { resolve = done }))
+    render(<Calculator client={{ evaluate }} />)
+    const user = userEvent.setup()
+    const input = screen.getByLabelText('Expression')
+    await user.type(input, '2+3')
+    await user.click(screen.getByRole('button', { name: 'Equals' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Calculating')
+    expect(input).toHaveAttribute('readonly')
+    expect(screen.getByRole('button', { name: 'Equals' })).toBeDisabled()
+    resolve(5)
+    expect(await screen.findByText('5')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('rejects keypad edits beyond the input limit', async () => {
+    render(<Calculator client={{ evaluate: vi.fn() }} />)
+    const input = screen.getByLabelText('Expression')
+    fireEvent.change(input, { target: { value: '1'.repeat(256) } })
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Add' }))
+    expect(input).toHaveValue('1'.repeat(256))
+    expect(screen.getByRole('alert')).toHaveTextContent('256 characters or fewer')
   })
 
   it('opens and closes the expression help', async () => {

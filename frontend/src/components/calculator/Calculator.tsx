@@ -41,6 +41,7 @@ export function Calculator({ client }: Props) {
                   <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Result</p>
                   <p className={`mt-2 break-all text-4xl font-semibold tracking-tight sm:text-5xl ${result === null ? 'text-slate-600' : 'text-emerald-300'}`}>{result === null ? '0' : formatResult(result)}</p>
                 </div>
+                {pending && <p role="status" className="mt-4 text-sm text-slate-300">Calculating…</p>}
                 {error && <p role="alert" className="mt-4 rounded-xl bg-rose-400/10 px-3 py-2 text-sm font-medium text-rose-200">{error}</p>}
               </div>
 

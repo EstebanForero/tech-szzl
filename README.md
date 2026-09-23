@@ -81,7 +81,7 @@ npm run test:coverage
 npm run build
 ```
 
-The backend tests cover arithmetic, expression parsing and evaluation, syntax limits, typed errors, and the HTTP endpoint with a fake evaluator. The frontend tests cover typed input, keypad editing, and API responses with fakes. See [COVERAGE.md](COVERAGE.md) for the measured report.
+The backend tests cover arithmetic, expression parsing and evaluation, syntax limits, typed errors, the HTTP endpoint with a fake evaluator, and the real server wiring. The frontend tests cover typed input, keypad editing, pending and validation states, and API responses with fakes. See [COVERAGE.md](COVERAGE.md) for the measured report.
 
 ## Design decisions
 
@@ -91,5 +91,3 @@ The backend tests cover arithmetic, expression parsing and evaluation, syntax li
 - `frontend/src/lib/api.ts` is the network boundary. The calculator panel receives a `CalculatorClient`, making interactions testable without a server. `useCalculator` owns expression state, submission, and cursor editing; `CalculatorKeypad` and `CalculatorHelp` handle their own presentation. Keypad text editing is a small pure module. Reusable button, input, label, and card components follow the local shadcn component pattern, with Tailwind CSS and accessible Radix labels.
 - Both sides use floating-point numbers. The UI formats results to at most 12 significant digits for readability. This is not an exact-decimal financial calculator.
 - The Vite proxy keeps local development on one browser origin. A production host should proxy API requests the same way.
-
-
