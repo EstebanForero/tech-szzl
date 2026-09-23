@@ -22,7 +22,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:9000`. Vite proxies `/api` and `/healthz` to the Go service at `http://localhost:8080`. The API listens on port 8080 by default; set `PORT` to change it. If you change the API port, also update the proxy target in `frontend/vite.config.ts`.
+Open `http://localhost:9000`. The calculator's “How to use” control shows the supported notation without leaving the page. Vite proxies `/api` and `/healthz` to the Go service at `http://localhost:8080`. The API listens on port 8080 by default; set `PORT` to change it. If you change the API port, also update the proxy target in `frontend/vite.config.ts`.
 
 To make a frontend production build, run `npm run build` in `frontend`; Vite writes it to `frontend/dist`. The Go API is a separate service and does not serve these static files. Deploy the frontend with a static host that proxies `/api` to the Go service.
 
@@ -88,7 +88,7 @@ The backend tests cover arithmetic, expression parsing and evaluation, syntax li
 - Arithmetic lives in `backend/internal/calculator`, independent of HTTP. `backend/internal/expression` tokenizes, parses, and evaluates text, delegating each arithmetic operation through a small interface. The parser never executes user code.
 - Domain and syntax failures have distinct Go error types. `backend/internal/httpapi` translates those types to JSON codes and status 400; unknown errors receive a generic 500. The handler depends on an `Evaluator` interface for isolated tests.
 - The expression endpoint is the sole calculation API. Strict JSON decoding rejects unknown fields and trailing values; the service validates finite input and output.
-- `frontend/src/lib/api.ts` is the network boundary. The calculator panel receives a `CalculatorClient`, making interactions testable without a server. Its keypad editing is a small pure module. Reusable button, input, label, and card components follow the local shadcn component pattern, with Tailwind CSS and accessible Radix labels.
+- `frontend/src/lib/api.ts` is the network boundary. The calculator panel receives a `CalculatorClient`, making interactions testable without a server. `useCalculator` owns expression state, submission, and cursor editing; `CalculatorKeypad` and `CalculatorHelp` handle their own presentation. Keypad text editing is a small pure module. Reusable button, input, label, and card components follow the local shadcn component pattern, with Tailwind CSS and accessible Radix labels.
 - Both sides use floating-point numbers. The UI formats results to at most 12 significant digits for readability. This is not an exact-decimal financial calculator.
 - The Vite proxy keeps local development on one browser origin. A production host should proxy API requests the same way.
 
