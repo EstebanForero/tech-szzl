@@ -54,8 +54,18 @@ func (p *parser) parseMultiply(depth int) (*node, error) {
 	if err != nil {
 		return nil, err
 	}
-	for p.current().kind == tokenMultiply || p.current().kind == tokenDivide || p.current().kind == tokenOf {
-		kind := p.take().kind
+	for {
+		kind := p.current().kind
+		implicit := kind == tokenLeftParen || kind == tokenSquareRoot ||
+			(kind == tokenNumber && p.index > 0 && p.tokens[p.index-1].kind == tokenRightParen)
+		if kind != tokenMultiply && kind != tokenDivide && !implicit {
+			break
+		}
+		if implicit {
+			kind = tokenMultiply
+		} else {
+			p.take()
+		}
 		right, err := p.parseUnary(depth)
 		if err != nil {
 			return nil, err
@@ -114,17 +124,21 @@ func (p *parser) parsePrimary(depth int) (*node, error) {
 	case tokenNumber:
 		p.take()
 		return &node{kind: tokenNumber, value: current.value}, nil
-	case tokenLeftParen, tokenSquareRoot:
+	case tokenSquareRoot:
 		if depth >= maxDepth {
 			return nil, &SyntaxError{current.position, "expression is nested too deeply"}
 		}
 		p.take()
-		if current.kind == tokenSquareRoot && p.current().kind != tokenLeftParen {
-			return nil, &SyntaxError{p.current().position, "sqrt requires parentheses"}
+		inside, err := p.parsePrimary(depth + 1)
+		if err != nil {
+			return nil, err
 		}
-		if current.kind == tokenSquareRoot {
-			p.take()
+		return &node{kind: tokenSquareRoot, left: inside}, nil
+	case tokenLeftParen:
+		if depth >= maxDepth {
+			return nil, &SyntaxError{current.position, "expression is nested too deeply"}
 		}
+		p.take()
 		inside, err := p.parseAdd(depth + 1)
 		if err != nil {
 			return nil, err
@@ -133,9 +147,6 @@ func (p *parser) parsePrimary(depth int) (*node, error) {
 			return nil, &SyntaxError{p.current().position, "missing closing parenthesis"}
 		}
 		p.take()
-		if current.kind == tokenSquareRoot {
-			return &node{kind: tokenSquareRoot, left: inside}, nil
-		}
 		return inside, nil
 	default:
 		return nil, &SyntaxError{current.position, "expected a number or opening parenthesis"}

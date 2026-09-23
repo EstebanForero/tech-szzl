@@ -1,6 +1,7 @@
 package expression
 
 import (
+	"errors"
 	"math"
 	"reflect"
 	"strings"
@@ -20,19 +21,26 @@ func TestEvaluate(t *testing.T) {
 		{"right associative power", "2^3^2", 512, nil},
 		{"unary below power", "-2^2", -4, nil},
 		{"negative exponent", "2^-2", 0.25, nil},
-		{"square roots", "sqrt(9) + √(16)", 7, nil},
-		{"percentage of", "20% of 50", 10, nil},
+		{"square roots", "√(9) + √(16)", 7, nil},
+		{"root without parentheses", "√9 + 1", 4, nil},
+		{"percentage", "20% × 50", 10, nil},
+		{"implicit multiplication with parentheses", "2(3 + 4)", 14, nil},
+		{"adjacent groups", "(2 + 3)(4 - 1)", 15, nil},
+		{"number after group", "(2 + 3)4", 20, nil},
+		{"number before root", "2√(9)", 6, nil},
 		{"standalone percentage", "20%", 0.2, nil},
 		{"decimals", "0.1 + .2", 0.3, nil},
 		{"scientific notation", "1e2 / 4", 25, nil},
 		{"unicode operators", "2 × 3 − 1", 5, nil},
 		{"invalid syntax", "2 + * 3", 0, &SyntaxError{}},
-		{"implicit multiplication rejected", "2(3)", 0, &SyntaxError{}},
+		{"separate numbers rejected", "2 3", 0, &SyntaxError{}},
+		{"word operator rejected", "20% of 50", 0, &SyntaxError{}},
+		{"word root rejected", "sqrt(9)", 0, &SyntaxError{}},
 		{"empty expression", "", 0, &SyntaxError{}},
 		{"invalid number", "1e309", 0, &SyntaxError{}},
-		{"missing parenthesis", "sqrt(9", 0, &SyntaxError{}},
+		{"missing parenthesis", "√(9", 0, &SyntaxError{}},
 		{"divide by zero", "1 / (2 - 2)", 0, &calculator.DivisionByZeroError{}},
-		{"negative root", "sqrt(-1)", 0, &calculator.InvalidOperandsError{}},
+		{"negative root", "√(-1)", 0, &calculator.InvalidOperandsError{}},
 		{"complex result", "(-2)^.5", 0, &calculator.InvalidResultError{}},
 		{"too long", strings.Repeat("1", 1025), 0, &SyntaxError{}},
 		{"too many parts", strings.Repeat("1+", 65) + "1", 0, &SyntaxError{}},
@@ -73,5 +81,13 @@ func TestEvaluatorDelegatesArithmetic(t *testing.T) {
 	}
 	if !reflect.DeepEqual(recorder.operations, []calculator.Operation{calculator.Multiply, calculator.Add}) {
 		t.Fatalf("unexpected operation order: %v", recorder.operations)
+	}
+}
+
+func TestSyntaxPositionUsesCharacters(t *testing.T) {
+	_, err := NewEvaluator(calculator.NewService()).Evaluate("√9 + of")
+	var syntax *SyntaxError
+	if !errors.As(err, &syntax) || syntax.Position != 5 {
+		t.Fatalf("want syntax error at character 6, got %v", err)
 	}
 }

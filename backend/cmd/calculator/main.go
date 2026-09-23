@@ -18,7 +18,7 @@ func main() {
 	service := calculator.NewService()
 	server := &http.Server{
 		Addr:    ":" + port,
-		Handler: httpapi.NewHandler(service, expression.NewEvaluator(service)),
+		Handler: httpapi.NewHandler(expression.NewEvaluator(service)),
 	}
 	log.Printf("calculator API listening on %s", server.Addr)
 	log.Fatal(server.ListenAndServe())

@@ -12,7 +12,7 @@ func NewEvaluator(service Calculator) *Evaluator { return &Evaluator{calculator:
 
 func (e *Evaluator) Evaluate(source string) (float64, error) {
 	if len(source) > 1024 {
-		return 0, &SyntaxError{1024, "expression is too long"}
+		return 0, syntaxAt(source, 1024, "expression is too long")
 	}
 	tokens, err := tokenize(source)
 	if err != nil {
@@ -55,7 +55,7 @@ func (n *node) evaluate(service Calculator) (float64, error) {
 		return service.Calculate(calculator.Add, []float64{left, right})
 	case tokenMinus:
 		return service.Calculate(calculator.Subtract, []float64{left, right})
-	case tokenMultiply, tokenOf:
+	case tokenMultiply:
 		return service.Calculate(calculator.Multiply, []float64{left, right})
 	case tokenDivide:
 		return service.Calculate(calculator.Divide, []float64{left, right})

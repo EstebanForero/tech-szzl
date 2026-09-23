@@ -4,7 +4,7 @@ import "fmt"
 
 // SyntaxError identifies invalid expression text before arithmetic is attempted.
 type SyntaxError struct {
-	Position int // zero-based byte offset in the original expression
+	Position int // zero-based character offset in the original expression
 	Reason   string
 }
 

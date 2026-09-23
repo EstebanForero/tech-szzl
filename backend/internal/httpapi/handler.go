@@ -11,33 +11,20 @@ import (
 	"calculator/backend/internal/expression"
 )
 
-type Calculator interface {
-	Calculate(operation calculator.Operation, operands []float64) (float64, error)
-}
-
 type Evaluator interface {
 	Evaluate(source string) (float64, error)
 }
 
-type Handler struct {
-	calculator Calculator
-	evaluator  Evaluator
-}
+type Handler struct{ evaluator Evaluator }
 
-func NewHandler(service Calculator, evaluator Evaluator) http.Handler {
-	h := &Handler{calculator: service, evaluator: evaluator}
+func NewHandler(evaluator Evaluator) http.Handler {
+	h := &Handler{evaluator: evaluator}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
-	mux.HandleFunc("POST /api/v1/calculate", h.calculate)
 	mux.HandleFunc("POST /api/v1/evaluate", h.evaluate)
 	return mux
-}
-
-type calculationRequest struct {
-	Operation calculator.Operation `json:"operation"`
-	Operands  []float64            `json:"operands"`
 }
 
 type evaluationRequest struct {
@@ -47,15 +34,6 @@ type evaluationRequest struct {
 type apiError struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
-}
-
-func (h *Handler) calculate(w http.ResponseWriter, r *http.Request) {
-	var request calculationRequest
-	if !readJSON(w, r, &request) {
-		return
-	}
-	result, err := h.calculator.Calculate(request.Operation, request.Operands)
-	writeResult(w, result, err)
 }
 
 func (h *Handler) evaluate(w http.ResponseWriter, r *http.Request) {

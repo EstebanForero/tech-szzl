@@ -2,7 +2,6 @@ package expression
 
 import (
 	"strconv"
-	"strings"
 	"unicode"
 	"unicode/utf8"
 )
@@ -21,7 +20,6 @@ const (
 	tokenLeftParen
 	tokenRightParen
 	tokenSquareRoot
-	tokenOf
 )
 
 type token struct {
@@ -37,7 +35,7 @@ func tokenize(source string) ([]token, error) {
 	for position := 0; position < len(source); {
 		r, size := utf8.DecodeRuneInString(source[position:])
 		if r == utf8.RuneError && size == 1 {
-			return nil, &SyntaxError{position, "invalid character"}
+			return nil, syntaxAt(source, position, "invalid character")
 		}
 		if unicode.IsSpace(r) {
 			position += size
@@ -45,7 +43,7 @@ func tokenize(source string) ([]token, error) {
 		}
 		start := position
 		var current token
-		current.position = start
+		current.position = utf8.RuneCountInString(source[:start])
 		switch {
 		case isDigit(source[position]) || (source[position] == '.' && position+1 < len(source) && isDigit(source[position+1])):
 			for position < len(source) && isDigit(source[position]) {
@@ -67,28 +65,19 @@ func tokenize(source string) ([]token, error) {
 					position++
 				}
 				if position == exponentStart {
-					return nil, &SyntaxError{start, "invalid number"}
+					return nil, syntaxAt(source, start, "invalid number")
 				}
 			}
 			value, err := strconv.ParseFloat(source[start:position], 64)
 			if err != nil {
-				return nil, &SyntaxError{start, "number is outside the supported range"}
+				return nil, syntaxAt(source, start, "number is outside the supported range")
 			}
 			current.kind, current.value = tokenNumber, value
-		case isLetter(source[position]):
-			for position < len(source) && isLetter(source[position]) {
-				position++
-			}
-			switch strings.ToLower(source[start:position]) {
-			case "sqrt":
-				current.kind = tokenSquareRoot
-			case "of":
-				current.kind = tokenOf
-			default:
-				return nil, &SyntaxError{start, "unknown word"}
-			}
 		default:
 			position += size
+			if unicode.IsLetter(r) {
+				return nil, syntaxAt(source, start, "words are not supported; use mathematical symbols")
+			}
 			switch r {
 			case '+':
 				current.kind = tokenPlus
@@ -109,16 +98,19 @@ func tokenize(source string) ([]token, error) {
 			case '√':
 				current.kind = tokenSquareRoot
 			default:
-				return nil, &SyntaxError{start, "invalid character"}
+				return nil, syntaxAt(source, start, "invalid character")
 			}
 		}
 		tokens = append(tokens, current)
 		if len(tokens) > maxTokens {
-			return nil, &SyntaxError{start, "expression has too many parts"}
+			return nil, syntaxAt(source, start, "expression has too many parts")
 		}
 	}
-	return append(tokens, token{kind: tokenEOF, position: len(source)}), nil
+	return append(tokens, token{kind: tokenEOF, position: utf8.RuneCountInString(source)}), nil
 }
 
-func isDigit(value byte) bool  { return value >= '0' && value <= '9' }
-func isLetter(value byte) bool { return value >= 'a' && value <= 'z' || value >= 'A' && value <= 'Z' }
+func isDigit(value byte) bool { return value >= '0' && value <= '9' }
+
+func syntaxAt(source string, byteOffset int, reason string) *SyntaxError {
+	return &SyntaxError{Position: utf8.RuneCountInString(source[:byteOffset]), Reason: reason}
+}
