@@ -5,11 +5,13 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    host: '127.0.0.1',
     port: 9000,
     strictPort: true,
     proxy: { '/api': 'http://localhost:8080', '/healthz': 'http://localhost:8080' },
   },
   preview: {
+    host: '127.0.0.1',
     port: 9000,
     strictPort: true,
   },

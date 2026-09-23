@@ -9,12 +9,15 @@ A responsive expression calculator with a React/TypeScript frontend and a Go RES
 
 ## Run locally
 
-Open two terminals from the repository root:
+Open two terminals in the repository root. In the first, build and start the API:
 
 ```bash
 cd backend
+go build ./...
 go run ./cmd/calculator
 ```
+
+In the second, install the frontend dependencies and start React:
 
 ```bash
 cd frontend
@@ -22,7 +25,9 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:9000`. The calculator's “How to use” control shows the supported notation without leaving the page. Vite proxies `/api` and `/healthz` to the Go service at `http://localhost:8080`. The API listens on port 8080 by default; set `PORT` to change it. If you change the API port, also update the proxy target in `frontend/vite.config.ts`.
+Open `http://127.0.0.1:9000`. `go build ./...` checks that the backend compiles; `go run` also builds before starting it, so you can skip the separate build on later runs. Run `npm ci` for the first setup or when dependencies change. The calculator's “How to use” control explains the supported notation in the app.
+
+React runs on port 9000, while Go listens on port 8080. The frontend calls relative `/api` URLs; Vite forwards those requests to Go during development. This keeps browser requests on one origin and avoids a separate CORS setup or hard-coded API address in the frontend. Vite also forwards `/healthz`. If you change the Go port with `PORT`, update the proxy target in `frontend/vite.config.ts` too.
 
 To make a frontend production build, run `npm run build` in `frontend`; Vite writes it to `frontend/dist`. The Go API is a separate service and does not serve these static files. Deploy the frontend with a static host that proxies `/api` to the Go service.
 
@@ -34,21 +39,21 @@ From the repository root, run:
 docker compose up --build
 ```
 
-Open `http://localhost:9000`. Compose builds each service from its own Dockerfile. Nginx serves the built React app on port 9000 and forwards `/api/` and `/healthz` to the Go container. The API is available through the same public port, for example `http://localhost:9000/api/v1/evaluate`. Stop the stack with `docker compose down`.
+Open `http://127.0.0.1:9000`. Compose builds each service from its own Dockerfile. Nginx serves the built React app on port 9000 and forwards `/api/` and `/healthz` to the Go container. The API is available through the same public port, for example `http://127.0.0.1:9000/api/v1/evaluate`. Stop the stack with `docker compose down`.
 
 ## API
 
 `POST /api/v1/evaluate` accepts one expression string:
 
 ```bash
-curl -sS http://localhost:9000/api/v1/evaluate \
+curl -sS http://127.0.0.1:9000/api/v1/evaluate \
   -H 'Content-Type: application/json' \
   -d '{"expression":"2 + 3 * (4 - 1)"}'
 # {"result":11}
 ```
 
 ```bash
-curl -sS http://localhost:9000/api/v1/evaluate \
+curl -sS http://127.0.0.1:9000/api/v1/evaluate \
   -H 'Content-Type: application/json' \
   -d '{"expression":"20% × 50"}'
 # {"result":10}
@@ -66,6 +71,14 @@ Invalid input returns HTTP 400 with a structured error. Division by zero returns
 
 An invalid expression returns `error.code = "invalid_expression"` with a character position. The domain has distinct error types for invalid operations, operands, division by zero, and non-finite results; the HTTP adapter maps them to public codes. Malformed JSON returns 400, requests without a JSON content type return 415, and unexpected server errors return 500 without exposing internal details.
 
+## Assumptions
+
+The brief calls for both basic and advanced arithmetic, so the UI uses a free-text expression field rather than separate operand fields for each operation. This lets users combine operations and parentheses in one calculation; the keypad offers another way to enter the same expressions.
+
+## AI assistance
+
+AI assistance was used during development and review. The prompts that shaped the submitted work, including the original brief and the later expression editor decision, are documented in [PROMPTS.md](PROMPTS.md).
+
 ## Tests and coverage
 
 ```bash
@@ -82,6 +95,10 @@ npm run build
 ```
 
 The backend tests cover arithmetic, expression parsing and evaluation, syntax limits, typed errors, the HTTP endpoint with a fake evaluator, and the real server wiring. The frontend tests cover typed input, keypad editing, pending and validation states, and API responses with fakes. See [COVERAGE.md](COVERAGE.md) for the measured report.
+
+## CI and releases
+
+GitHub Actions runs the Go tests and `go vet`, plus the frontend coverage tests and production build, on pull requests and pushes to `main`. Pushing a version tag such as `v1.0.0` runs those checks and then publishes separate backend and frontend images to GitHub Container Registry as `ghcr.io/<owner>/<repo>-backend:v1.0.0` and `ghcr.io/<owner>/<repo>-frontend:v1.0.0`. The release job uses GitHub's repository token; no registry secret is needed. Deploy the images to your chosen host separately.
 
 ## Design decisions
 
