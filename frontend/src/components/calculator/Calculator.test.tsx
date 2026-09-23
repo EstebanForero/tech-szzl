@@ -36,4 +36,18 @@ describe('Calculator', () => {
     expect(screen.getByLabelText('Expression')).toHaveValue('')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
+
+  it('supports the keyboard shortcut and reuses a previous expression', async () => {
+    const evaluate = vi.fn().mockResolvedValue(10)
+    render(<Calculator client={{ evaluate }} />)
+    const user = userEvent.setup()
+    const input = screen.getByLabelText('Expression')
+    await user.type(input, '20% of 50')
+    await user.keyboard('{Control>}{Enter}{/Control}')
+    expect(evaluate).toHaveBeenCalledWith('20% of 50')
+    await screen.findByText('10')
+    await user.click(screen.getByRole('button', { name: /clear/i }))
+    await user.click(screen.getByRole('button', { name: 'Reuse 20% of 50' }))
+    expect(input).toHaveValue('20% of 50')
+  })
 })
