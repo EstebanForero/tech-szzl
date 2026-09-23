@@ -23,8 +23,8 @@ func NewService() *Service { return &Service{} }
 func (s *Service) Calculate(operation Operation, operands []float64) (float64, error) {
 	want := 2
 	switch operation {
-	case Add, Subtract, Multiply, Divide, Power, Percent:
-	case SquareRoot:
+	case Add, Subtract, Multiply, Divide, Power:
+	case SquareRoot, Percent:
 		want = 1
 	default:
 		return 0, &InvalidOperationError{Operation: operation}
@@ -60,7 +60,7 @@ func (s *Service) Calculate(operation Operation, operands []float64) (float64, e
 		}
 		result = math.Sqrt(a)
 	case Percent:
-		result = a / 100 * operands[1]
+		result = a / 100
 	}
 	if math.IsNaN(result) || math.IsInf(result, 0) {
 		return 0, &InvalidResultError{}

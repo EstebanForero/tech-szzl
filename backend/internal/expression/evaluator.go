@@ -41,7 +41,7 @@ func (n *node) evaluate(service Calculator) (float64, error) {
 		return service.Calculate(calculator.SquareRoot, []float64{left})
 	}
 	if n.kind == tokenPercent {
-		return service.Calculate(calculator.Percent, []float64{left, 1})
+		return service.Calculate(calculator.Percent, []float64{left})
 	}
 	right, err := n.right.evaluate(service)
 	if err != nil {
