@@ -4,34 +4,36 @@ import { describe, expect, it, vi } from 'vitest'
 import { Calculator } from './Calculator'
 
 describe('Calculator', () => {
-  it('sends operands to the client and shows the result', async () => {
-    const calculate = vi.fn().mockResolvedValue(5)
-    render(<Calculator client={{ calculate }} />)
+  it('sends a full expression and shows the answer and history', async () => {
+    const evaluate = vi.fn().mockResolvedValue(11)
+    render(<Calculator client={{ evaluate }} />)
     const user = userEvent.setup()
-    await user.type(screen.getByLabelText('First number'), '2')
-    await user.type(screen.getByLabelText('Second number'), '3')
-    await user.click(screen.getByRole('button', { name: /calculate/i }))
-    expect(calculate).toHaveBeenCalledWith('add', [2, 3])
-    expect(await screen.findByText('5')).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Expression'), '2 + 3 * (4 - 1)')
+    await user.click(screen.getByRole('button', { name: /evaluate expression/i }))
+    expect(evaluate).toHaveBeenCalledWith('2 + 3 * (4 - 1)')
+    expect(await screen.findByText('11')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reuse 2 + 3 * (4 - 1)' })).toBeInTheDocument()
   })
 
-  it('validates locally without calling the API', async () => {
-    const calculate = vi.fn()
-    render(<Calculator client={{ calculate }} />)
-    await userEvent.setup().click(screen.getByRole('button', { name: /calculate/i }))
-    expect(screen.getByRole('alert')).toHaveTextContent('Enter first number')
-    expect(calculate).not.toHaveBeenCalled()
+  it('rejects an empty expression before calling the API', async () => {
+    const evaluate = vi.fn()
+    render(<Calculator client={{ evaluate }} />)
+    await userEvent.setup().click(screen.getByRole('button', { name: /evaluate expression/i }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter an expression')
+    expect(evaluate).not.toHaveBeenCalled()
   })
 
-  it('sends one operand for square root and surfaces service errors', async () => {
-    const calculate = vi.fn().mockRejectedValue(new Error('Service unavailable'))
-    render(<Calculator client={{ calculate }} />)
+  it('loads an example and displays typed API errors', async () => {
+    const evaluate = vi.fn().mockRejectedValue(new Error('cannot divide by zero'))
+    render(<Calculator client={{ evaluate }} />)
     const user = userEvent.setup()
-    await user.click(screen.getByRole('button', { name: /square root/i }))
-    expect(screen.queryByLabelText('Second number')).not.toBeInTheDocument()
-    await user.type(screen.getByLabelText('Number'), '9')
-    await user.click(screen.getByRole('button', { name: /calculate/i }))
-    expect(calculate).toHaveBeenCalledWith('sqrt', [9])
-    expect(await screen.findByRole('alert')).toHaveTextContent('Service unavailable')
+    await user.click(screen.getByRole('button', { name: /20% of 50/i }))
+    expect(screen.getByLabelText('Expression')).toHaveValue('20% of 50')
+    await user.click(screen.getByRole('button', { name: /evaluate expression/i }))
+    expect(evaluate).toHaveBeenCalledWith('20% of 50')
+    expect(await screen.findByRole('alert')).toHaveTextContent('cannot divide by zero')
+    await user.click(screen.getByRole('button', { name: /clear/i }))
+    expect(screen.getByLabelText('Expression')).toHaveValue('')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

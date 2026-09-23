@@ -1,7 +1,5 @@
-import type { Operation } from './operations'
-
 export interface CalculatorClient {
-  calculate(operation: Operation, operands: number[]): Promise<number>
+  evaluate(expression: string): Promise<number>
 }
 
 export class ApiError extends Error {
@@ -13,13 +11,13 @@ export class ApiError extends Error {
 
 export function createCalculatorClient(fetcher: typeof fetch = fetch): CalculatorClient {
   return {
-    async calculate(operation, operands) {
+    async evaluate(expression) {
       let response: Response
       try {
-        response = await fetcher('/api/v1/calculate', {
+        response = await fetcher('/api/v1/evaluate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ operation, operands }),
+          body: JSON.stringify({ expression }),
         })
       } catch {
         throw new ApiError('network_error', 'Could not reach the calculator service. Check that the backend is running.')
